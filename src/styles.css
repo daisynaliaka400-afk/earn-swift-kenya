@@ -109,8 +109,7 @@
 @utility card { @apply rounded-2xl border bg-card shadow-card; }
 @utility input { @apply w-full rounded-xl border border-input bg-card px-4 py-3 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15; }
 @utility eyebrow { @apply text-xs font-semibold uppercase tracking-widest text-primary; }
-  .chip { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium; }
-}
+@utility chip { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium; }
 
 @keyframes pulse-dot { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .4; transform: scale(.8);} }
 .live-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
