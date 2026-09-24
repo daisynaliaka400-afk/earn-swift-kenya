@@ -22,6 +22,20 @@
       "when": 1790271599603,
       "tag": "0002_require_verifiable_live_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790280465771,
+      "tag": "0003_app_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790280469183,
+      "tag": "0004_app_settings",
+      "breakpoints": true
     }
   ]
 }
