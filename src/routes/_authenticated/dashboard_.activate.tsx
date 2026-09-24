@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { initiateStkPush, checkPaymentStatus } from "@/lib/payments.functions";
 import { ksh } from "@/lib/phone";
 
-export const Route = createFileRoute("/_authenticated/dashboard/activate")({
+export const Route = createFileRoute("/_authenticated/dashboard_/activate")({
   head: () => ({ meta: [{ title: "Activate account — SmartEarn" }, { name: "robots", content: "noindex" }] }),
   component: Activate,
 });
