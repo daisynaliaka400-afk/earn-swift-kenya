@@ -102,14 +102,13 @@
   color: transparent;
 }
 
-@layer components {
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none; }
-  .btn-primary { @apply btn bg-brand text-primary-foreground shadow-brand hover:brightness-110; }
-  .btn-outline { @apply btn border border-input bg-card text-foreground hover:bg-secondary; }
-  .btn-ghost { @apply btn text-foreground hover:bg-secondary; }
-  .card { @apply rounded-2xl border bg-card shadow-card; }
-  .input { @apply w-full rounded-xl border border-input bg-card px-4 py-3 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15; }
-  .eyebrow { @apply text-xs font-semibold uppercase tracking-widest text-primary; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none; }
+@utility btn-primary { @apply btn bg-brand text-primary-foreground shadow-brand hover:brightness-110; }
+@utility btn-outline { @apply btn border border-input bg-card text-foreground hover:bg-secondary; }
+@utility btn-ghost { @apply btn text-foreground hover:bg-secondary; }
+@utility card { @apply rounded-2xl border bg-card shadow-card; }
+@utility input { @apply w-full rounded-xl border border-input bg-card px-4 py-3 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15; }
+@utility eyebrow { @apply text-xs font-semibold uppercase tracking-widest text-primary; }
   .chip { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium; }
 }
 
