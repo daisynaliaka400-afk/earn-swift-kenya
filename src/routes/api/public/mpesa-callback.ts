@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/public/mpesa-callback")({
 
         if (p.code === 0) {
           if (!p.txid) {
-            await db.from("stk_transactions").update({ callback_payload: body, failure_reason: "missing_txid" }).eq("id", t.id);
+            await db.from("stk_transactions").update({ callback_payload: body as never, failure_reason: "missing_txid" }).eq("id", t.id);
             return Response.json({ ok: false }, { status: 200 });
           }
           const { data: r } = await db.rpc("activate_stk", { _ref: t.ref, _txid: p.txid, _amount: p.amount, _payload: body as never, _actor: "callback" });
@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/public/mpesa-callback")({
 
         if (t.status !== "success") {
           const cancelled = p.code === 1032;
-          await db.from("stk_transactions").update({ status: cancelled ? "cancelled" : "failed", failure_reason: p.desc, callback_payload: body, updated_at: new Date().toISOString() }).eq("id", t.id).neq("status", "success");
+          await db.from("stk_transactions").update({ status: cancelled ? "cancelled" : "failed", failure_reason: p.desc, callback_payload: body as never, updated_at: new Date().toISOString() }).eq("id", t.id).neq("status", "success");
           const { data: u } = await db.from("profiles").select("name").eq("id", t.user_id).single();
           const { sendSms } = await import("@/lib/sms.server");
           await sendSms(db, {

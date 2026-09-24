@@ -53,11 +53,11 @@ export const initiateStkPush = createServerFn({ method: "POST" })
 
     if (!okRes) {
       const reason = String(resBody["message"] ?? resBody["error"] ?? "Gateway error");
-      await db.from("stk_transactions").update({ status: "failed", failure_reason: reason, response_payload: resBody, updated_at: new Date().toISOString() }).eq("ref", ref);
+      await db.from("stk_transactions").update({ status: "failed", failure_reason: reason, response_payload: resBody as never, updated_at: new Date().toISOString() }).eq("ref", ref);
       console.error("STK push failed", resBody);
       return { success: false as const, error: "Couldn't send the M-Pesa prompt. Please try again." };
     }
-    await db.from("stk_transactions").update({ status: "pending", checkout_request_id: checkout ?? null, merchant_request_id: merchant ?? null, response_payload: resBody, updated_at: new Date().toISOString() }).eq("ref", ref);
+    await db.from("stk_transactions").update({ status: "pending", checkout_request_id: checkout ?? null, merchant_request_id: merchant ?? null, response_payload: resBody as never, updated_at: new Date().toISOString() }).eq("ref", ref);
     await sendSms(db, { phone, userId: context.userId, trigger: "stk_sent", dedupeKey: `stk_sent:${ref}`,
       message: `📲 ${user.name}, we've sent an M-Pesa prompt to ${phone}. Enter your PIN to activate. Ref: ${ref}` });
     return { success: true as const, ref };
