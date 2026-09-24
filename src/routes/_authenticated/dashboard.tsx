@@ -66,7 +66,7 @@ function Dashboard() {
 
       <main className="mx-auto max-w-4xl space-y-6 px-4 pt-6">
         <section className="overflow-hidden rounded-3xl bg-navy-gradient p-6 text-navy-foreground">
-          <p className="text-sm opacity-70">Hi {p?.name ?? "there"} 👋</p>
+          <p className="text-sm opacity-70">Hi {p?.name ?? "there"}</p>
           <p className="mt-3 text-xs uppercase tracking-widest opacity-60">Balance</p>
           <p className="font-display text-4xl font-bold">{ksh(p?.balance ?? 0)}</p>
           <div className="mt-4 flex flex-wrap gap-2">
