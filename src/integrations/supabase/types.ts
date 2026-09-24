@@ -14,16 +14,200 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          activated_at: string | null
+          balance: number
+          created_at: string
+          email: string | null
+          fraud_score: number
+          id: string
+          last_login: string | null
+          last_task: string | null
+          name: string
+          phone: string
+          referral_code: string
+          referred_by: string | null
+          sms_opt_out: boolean
+          status: Database["public"]["Enums"]["account_status"]
+          streak: number
+          tier: Database["public"]["Enums"]["account_tier"]
+        }
+        Insert: {
+          activated_at?: string | null
+          balance?: number
+          created_at?: string
+          email?: string | null
+          fraud_score?: number
+          id: string
+          last_login?: string | null
+          last_task?: string | null
+          name: string
+          phone: string
+          referral_code: string
+          referred_by?: string | null
+          sms_opt_out?: boolean
+          status?: Database["public"]["Enums"]["account_status"]
+          streak?: number
+          tier?: Database["public"]["Enums"]["account_tier"]
+        }
+        Update: {
+          activated_at?: string | null
+          balance?: number
+          created_at?: string
+          email?: string | null
+          fraud_score?: number
+          id?: string
+          last_login?: string | null
+          last_task?: string | null
+          name?: string
+          phone?: string
+          referral_code?: string
+          referred_by?: string | null
+          sms_opt_out?: boolean
+          status?: Database["public"]["Enums"]["account_status"]
+          streak?: number
+          tier?: Database["public"]["Enums"]["account_tier"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_completions: {
+        Row: {
+          created_at: string
+          id: string
+          proof: string | null
+          reward: number
+          status: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          proof?: string | null
+          reward: number
+          status?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          proof?: string | null
+          reward?: number
+          status?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          est_minutes: number
+          id: string
+          is_active: boolean
+          requires_proof: boolean
+          reward_pro: number
+          reward_standard: number
+          reward_starter: number
+          slots_total: number | null
+          slots_used: number
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          est_minutes?: number
+          id?: string
+          is_active?: boolean
+          requires_proof?: boolean
+          reward_pro: number
+          reward_standard: number
+          reward_starter: number
+          slots_total?: number | null
+          slots_used?: number
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          est_minutes?: number
+          id?: string
+          is_active?: boolean
+          requires_proof?: boolean
+          reward_pro?: number
+          reward_standard?: number
+          reward_starter?: number
+          slots_total?: number | null
+          slots_used?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_task: { Args: { _task_id: string }; Returns: number }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      account_status: "pending" | "active" | "suspended"
+      account_tier: "starter" | "standard" | "pro"
+      app_role: "admin" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +334,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_status: ["pending", "active", "suspended"],
+      account_tier: ["starter", "standard", "pro"],
+      app_role: ["admin", "customer"],
+    },
   },
 } as const
