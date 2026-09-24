@@ -13,7 +13,15 @@ export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
     if ((await getMyRole()) !== "admin") throw redirect({ to: "/dashboard" });
   },
-  head: () => ({ meta: [{ title: "Admin — SmartEarn" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [
+    { title: "Admin — SmartEarn" },
+    { name: "description", content: "Manage SmartEarn users, verified tasks, payments, and messages." },
+    { property: "og:title", content: "Admin — SmartEarn" },
+    { property: "og:description", content: "Manage SmartEarn users, verified tasks, payments, and messages." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "robots", content: "noindex" },
+  ] }),
   component: Admin,
 });
 
@@ -74,18 +82,19 @@ function Overview() {
 function TasksAdmin() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["admin-tasks"], queryFn: async () => (await supabase.from("tasks").select("*").order("created_at", { ascending: false })).data ?? [] });
-  const [f, setF] = useState({ title: "", category: "Surveys", r1: "", r2: "", r3: "", mins: "3", slots: "" });
+  const [f, setF] = useState({ title: "", description: "", sponsor: "", url: "", instructions: "", category: "Surveys", r1: "", r2: "", r3: "", mins: "3", slots: "", proof: true });
   const [err, setErr] = useState("");
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setErr("");
     const { error } = await supabase.from("tasks").insert({
-      title: f.title, category: f.category, reward_starter: +f.r1, reward_standard: +f.r2, reward_pro: +f.r3,
-      est_minutes: +f.mins || 2, slots_total: f.slots ? +f.slots : null,
+      title: f.title, description: f.description, sponsor_name: f.sponsor, action_url: f.url, instructions: f.instructions,
+      category: f.category, reward_starter: +f.r1, reward_standard: +f.r2, reward_pro: +f.r3,
+      est_minutes: +f.mins || 2, slots_total: f.slots ? +f.slots : null, requires_proof: f.proof, is_active: true,
     });
     if (error) return setErr(error.message);
-    setF({ ...f, title: "", r1: "", r2: "", r3: "", slots: "" });
+    setF({ ...f, title: "", description: "", sponsor: "", url: "", instructions: "", r1: "", r2: "", r3: "", slots: "" });
     qc.invalidateQueries({ queryKey: ["admin-tasks"] });
   }
   async function toggle(id: string, is_active: boolean) {
@@ -97,6 +106,10 @@ function TasksAdmin() {
     <div className="space-y-6">
       <form onSubmit={add} className="card grid gap-3 p-5 md:grid-cols-4">
         <input className="input md:col-span-2" placeholder="Task title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} required />
+        <input className="input md:col-span-2" placeholder="Sponsor or client name" value={f.sponsor} onChange={(e) => setF({ ...f, sponsor: e.target.value })} required />
+        <input className="input md:col-span-4" type="url" placeholder="Verified task link (https://...)" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} required />
+        <textarea className="input md:col-span-2" placeholder="Public task description" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} required />
+        <textarea className="input md:col-span-2" placeholder="Exact completion and proof instructions" value={f.instructions} onChange={(e) => setF({ ...f, instructions: e.target.value })} required />
         <select className="input" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}>
           {["Surveys", "Videos", "App Tasks", "Social Media", "Data Entry", "Gaming", "Shopping", "Content Creation", "Research", "Promotional"].map((c) => <option key={c}>{c}</option>)}
         </select>
@@ -105,6 +118,7 @@ function TasksAdmin() {
         <input className="input" placeholder="Standard KSh" inputMode="decimal" value={f.r2} onChange={(e) => setF({ ...f, r2: e.target.value })} required />
         <input className="input" placeholder="Pro KSh" inputMode="decimal" value={f.r3} onChange={(e) => setF({ ...f, r3: e.target.value })} required />
         <input className="input" placeholder="Slots (blank = unlimited)" inputMode="numeric" value={f.slots} onChange={(e) => setF({ ...f, slots: e.target.value })} />
+        <label className="flex items-center gap-2 text-sm md:col-span-4"><input type="checkbox" checked={f.proof} onChange={(e) => setF({ ...f, proof: e.target.checked })} /> Require proof review before crediting</label>
         {err && <p className="text-sm text-destructive md:col-span-4">{err}</p>}
         <button className="btn-primary md:col-span-4">Add task</button>
       </form>
@@ -113,7 +127,7 @@ function TasksAdmin() {
           <div key={t.id} className="flex items-center justify-between gap-4 p-4 text-sm">
             <div className="min-w-0">
               <p className="truncate font-medium">{t.title}</p>
-              <p className="text-xs text-muted-foreground">{t.category} · {ksh(t.reward_starter)}/{ksh(t.reward_standard)}/{ksh(t.reward_pro)} · {t.slots_used}/{t.slots_total ?? "∞"} used</p>
+               <p className="text-xs text-muted-foreground">{t.sponsor_name || "No sponsor"} · {t.category} · {ksh(t.reward_starter)}/{ksh(t.reward_standard)}/{ksh(t.reward_pro)} · {t.slots_used}/{t.slots_total ?? "∞"} used</p>
             </div>
             <button onClick={() => toggle(t.id, !t.is_active)} className={`chip ${t.is_active ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>{t.is_active ? "Live" : "Paused"}</button>
           </div>

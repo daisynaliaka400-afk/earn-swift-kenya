@@ -8,7 +8,15 @@ import { initiateStkPush, checkPaymentStatus } from "@/lib/payments.functions";
 import { ksh } from "@/lib/phone";
 
 export const Route = createFileRoute("/_authenticated/dashboard_/activate")({
-  head: () => ({ meta: [{ title: "Activate account — SmartEarn" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [
+    { title: "Activate account — SmartEarn" },
+    { name: "description", content: "Activate your SmartEarn account securely through M-Pesa." },
+    { property: "og:title", content: "Activate account — SmartEarn" },
+    { property: "og:description", content: "Activate your SmartEarn account securely through M-Pesa." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "robots", content: "noindex" },
+  ] }),
   component: Activate,
 });
 
@@ -33,20 +41,25 @@ function Activate() {
 
   useEffect(() => { if (p?.phone && !phone) setPhone("0" + p.phone.slice(3)); }, [p, phone]);
   useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
-  const plan = plans.find((x) => x.tier === tier)!;
+  const plan = plans.find((x) => x.tier === tier) ?? plans[0];
 
   async function pay() {
     if (state === "sending" || state === "waiting") return;
     setState("sending"); setMsg("Sending STK Push…"); setSlow(false);
-    const r = await push({ data: { tier, phone } });
+    let r: Awaited<ReturnType<typeof push>>;
+    try {
+      r = await push({ data: { tier, phone } });
+    } catch {
+      setState("failed"); setMsg("Payment service could not be reached. Please retry or use manual payment."); return;
+    }
     if (!r.success) { setState("failed"); setMsg(r.error); return; }
     setState("waiting"); setMsg("Check your phone and enter your M-Pesa PIN.");
     const start = Date.now();
     timer.current = setInterval(async () => {
       if (Date.now() - start > 120000) setSlow(true);
       const s = await check({ data: { ref: r.ref } });
-      if (s.status === "success") { clearInterval(timer.current!); nav({ to: "/dashboard", search: { activated: 1 } as never }); }
-      else if (["failed", "cancelled", "unknown"].includes(s.status)) { clearInterval(timer.current!); setState("failed"); setMsg(s.message); }
+      if (s.status === "success") { if (timer.current) clearInterval(timer.current); nav({ to: "/dashboard", search: { activated: 1 } as never }); }
+      else if (["failed", "cancelled", "unknown"].includes(s.status)) { if (timer.current) clearInterval(timer.current); setState("failed"); setMsg(s.message); }
     }, 3000);
   }
 

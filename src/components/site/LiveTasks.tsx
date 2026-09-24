@@ -22,7 +22,7 @@ export function useActiveTasks() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tasks")
-        .select("id,title,description,category,reward_starter,reward_pro,est_minutes,slots_total,slots_used")
+        .select("id,title,description,category,reward_starter,reward_pro,est_minutes,slots_total,slots_used,action_url,sponsor_name")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -69,10 +69,11 @@ export function LiveTasks() {
           return (
             <article key={t.id} className="card flex flex-col p-5 transition hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
-                <span className="chip bg-secondary text-secondary-foreground">{t.category}</span>
+                 <span className="chip bg-secondary text-secondary-foreground">{t.category}</span>
                 {left !== 0 && <span className="chip bg-success/10 text-success">Available now</span>}
               </div>
               <h3 className="mt-3 font-semibold">{t.title}</h3>
+               {t.sponsor_name && <p className="mt-1 text-xs font-medium text-primary">By {t.sponsor_name}</p>}
               {t.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{t.description}</p>}
               <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> ~{t.est_minutes} min</span>
@@ -90,7 +91,7 @@ export function LiveTasks() {
                     {ksh(t.reward_starter)}{Number(t.reward_pro) > Number(t.reward_starter) && ` – ${ksh(t.reward_pro)}`}
                   </p>
                 </div>
-                <Link to="/register" className="btn-primary px-4 py-2">Start</Link>
+                <Link to="/register" search={{}} className="btn-primary px-4 py-2">Sign up</Link>
               </div>
             </article>
           );
