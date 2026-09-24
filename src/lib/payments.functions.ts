@@ -64,9 +64,12 @@ export const initiateStkPush = createServerFn({ method: "POST" })
 
     if (!okRes) {
       const reason = String(resBody["message"] ?? resBody["error"] ?? `SmartPay returned HTTP ${httpStatus || "error"}`);
+      const errorCode = String(resBody["error_code"] ?? "");
       await db.from("stk_transactions").update({ status: "failed", failure_reason: reason, response_payload: resBody as never, updated_at: new Date().toISOString() }).eq("ref", ref);
       console.error("STK push failed", { httpStatus, response: resBody });
-      return { success: false as const, error: httpStatus === 401 || httpStatus === 403
+      return { success: false as const, error: errorCode === "LIMIT_REACHED"
+        ? "M-Pesa prompts are temporarily unavailable because the payment service limit has been reached. Please use manual payment."
+        : httpStatus === 401 || httpStatus === 403
         ? "SmartPay rejected the payment connection. Please use manual payment while support checks it."
         : "Couldn't send the M-Pesa prompt. Please try again or use manual payment." };
     }

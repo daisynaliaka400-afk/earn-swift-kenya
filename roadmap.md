@@ -31,3 +31,4 @@
 - Add sponsor-provided task links and instructions through Admin before publishing tasks
 - Support contact details for Help page
 - Confirm SmartPay callback URL registered in SmartPay dashboard: https://project--7135d1a6-507a-47ce-b4c8-2f404af01cf0.lovable.app/api/public/mpesa-callback
+- SmartPay currently returns `LIMIT_REACHED`; the provider account must be funded or its API allowance renewed before live prompts can succeed
