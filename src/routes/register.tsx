@@ -6,7 +6,8 @@ import { AuthShell } from "@/components/site/AuthShell";
 import { normalizePhone, phoneToAuthEmail } from "@/lib/phone";
 
 export const Route = createFileRoute("/register")({
-  validateSearch: (s: Record<string, unknown>) => ({ ref: typeof s.ref === "string" ? s.ref : undefined }),
+  validateSearch: (s: Record<string, unknown>): { ref?: string } =>
+    typeof s["ref"] === "string" ? { ref: s["ref"] } : {},
   head: () => ({
     meta: [
       { title: "Create account — SmartEarn" },
