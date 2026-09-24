@@ -43,6 +43,13 @@
       "when": 1790280771257,
       "tag": "0005_live_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790281201375,
+      "tag": "0006_auto_approve_tasks",
+      "breakpoints": true
     }
   ]
 }
