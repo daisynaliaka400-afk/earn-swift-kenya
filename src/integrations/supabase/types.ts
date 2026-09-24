@@ -304,11 +304,13 @@ export type Database = {
       }
       tasks: {
         Row: {
+          action_url: string | null
           category: string
           created_at: string
           description: string | null
           est_minutes: number
           id: string
+          instructions: string | null
           is_active: boolean
           requires_proof: boolean
           reward_pro: number
@@ -316,14 +318,17 @@ export type Database = {
           reward_starter: number
           slots_total: number | null
           slots_used: number
+          sponsor_name: string | null
           title: string
         }
         Insert: {
+          action_url?: string | null
           category: string
           created_at?: string
           description?: string | null
           est_minutes?: number
           id?: string
+          instructions?: string | null
           is_active?: boolean
           requires_proof?: boolean
           reward_pro: number
@@ -331,14 +336,17 @@ export type Database = {
           reward_starter: number
           slots_total?: number | null
           slots_used?: number
+          sponsor_name?: string | null
           title: string
         }
         Update: {
+          action_url?: string | null
           category?: string
           created_at?: string
           description?: string | null
           est_minutes?: number
           id?: string
+          instructions?: string | null
           is_active?: boolean
           requires_proof?: boolean
           reward_pro?: number
@@ -346,6 +354,7 @@ export type Database = {
           reward_starter?: number
           slots_total?: number | null
           slots_used?: number
+          sponsor_name?: string | null
           title?: string
         }
         Relationships: []
