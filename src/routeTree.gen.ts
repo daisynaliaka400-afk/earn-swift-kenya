@@ -20,7 +20,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedDashboardActivateRouteImport } from './routes/_authenticated/dashboard.activate'
+import { Route as AuthenticatedDashboardActivateRouteImport } from './routes/_authenticated/dashboard_.activate'
 import { Route as ApiPublicMpesaCallbackRouteImport } from './routes/api/public/mpesa-callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -79,9 +79,9 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 } as any)
 const AuthenticatedDashboardActivateRoute =
   AuthenticatedDashboardActivateRouteImport.update({
-    id: '/activate',
-    path: '/activate',
-    getParentRoute: () => AuthenticatedDashboardRoute,
+    id: '/dashboard_/activate',
+    path: '/dashboard/activate',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiPublicMpesaCallbackRoute = ApiPublicMpesaCallbackRouteImport.update({
   id: '/api/public/mpesa-callback',
@@ -99,7 +99,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/dashboard/activate': typeof AuthenticatedDashboardActivateRoute
   '/api/public/mpesa-callback': typeof ApiPublicMpesaCallbackRoute
 }
@@ -113,7 +113,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/dashboard/activate': typeof AuthenticatedDashboardActivateRoute
   '/api/public/mpesa-callback': typeof ApiPublicMpesaCallbackRoute
 }
@@ -129,8 +129,8 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
-  '/_authenticated/dashboard/activate': typeof AuthenticatedDashboardActivateRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dashboard_/activate': typeof AuthenticatedDashboardActivateRoute
   '/api/public/mpesa-callback': typeof ApiPublicMpesaCallbackRoute
 }
 export interface FileRouteTypes {
@@ -175,7 +175,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
-    | '/_authenticated/dashboard/activate'
+    | '/_authenticated/dashboard_/activate'
     | '/api/public/mpesa-callback'
   fileRoutesById: FileRoutesById
 }
@@ -271,12 +271,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/dashboard/activate': {
-      id: '/_authenticated/dashboard/activate'
-      path: '/activate'
+    '/_authenticated/dashboard_/activate': {
+      id: '/_authenticated/dashboard_/activate'
+      path: '/dashboard/activate'
       fullPath: '/dashboard/activate'
       preLoaderRoute: typeof AuthenticatedDashboardActivateRouteImport
-      parentRoute: typeof AuthenticatedDashboardRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/mpesa-callback': {
       id: '/api/public/mpesa-callback'
@@ -288,28 +288,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedDashboardRouteChildren {
-  AuthenticatedDashboardActivateRoute: typeof AuthenticatedDashboardActivateRoute
-}
-
-const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
-  {
-    AuthenticatedDashboardActivateRoute: AuthenticatedDashboardActivateRoute,
-  }
-
-const AuthenticatedDashboardRouteWithChildren =
-  AuthenticatedDashboardRoute._addFileChildren(
-    AuthenticatedDashboardRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRouteWithChildren
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDashboardActivateRoute: typeof AuthenticatedDashboardActivateRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRouteWithChildren,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDashboardActivateRoute: AuthenticatedDashboardActivateRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
