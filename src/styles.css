@@ -113,3 +113,15 @@
 
 @keyframes pulse-dot { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .4; transform: scale(.8);} }
 .live-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+/* Hide the "Made with Lovable" badge without affecting layout */
+a[href*="lovable.app"][target="_blank"],
+a[href*="lovable.dev"][target="_blank"],
+div[id*="lovable-badge"],
+div[class*="lovable-badge"],
+iframe[src*="lovable"],
+[data-lovable-badge] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
