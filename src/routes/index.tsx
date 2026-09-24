@@ -6,6 +6,7 @@ import {
 import heroPhone from "@/assets/hero-phone.png";
 import { PublicLayout } from "@/components/site/PublicLayout";
 import { LiveTasks } from "@/components/site/LiveTasks";
+import { LiveActivity } from "@/components/site/LiveActivity";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -83,6 +84,7 @@ function Home() {
       </section>
 
       <LiveTasks />
+      <LiveActivity />
 
       {/* Categories */}
       <section className="mx-auto max-w-6xl px-4 py-14">
