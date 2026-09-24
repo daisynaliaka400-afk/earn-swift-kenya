@@ -39,7 +39,7 @@ function Register() {
     const phone = normalizePhone(f.phone);
     if (!phone) return setErr("Enter a valid Kenyan phone number.");
     const v = schema.safeParse(f);
-    if (!v.success) return setErr(v.error.issues[0].message);
+    if (!v.success) return setErr(v.error.issues[0]?.message ?? "Check your details.");
     if (!f.agree) return setErr("Please accept the Terms to continue.");
     setBusy(true);
     const { error } = await supabase.auth.signUp({
