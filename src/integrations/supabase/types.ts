@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit: {
+        Row: {
+          action: string
+          actor: string
+          created_at: string
+          details: Json | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+        }
+        Relationships: []
+      }
+      commissions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           activated_at: string | null
@@ -73,6 +136,121 @@ export type Database = {
           {
             foreignKeyName: "profiles_referred_by_fkey"
             columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_logs: {
+        Row: {
+          attempts: number
+          dedupe_key: string | null
+          http_code: number | null
+          id: string
+          message: string
+          phone: string
+          response: string | null
+          sent_at: string
+          status: string
+          trigger_type: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          dedupe_key?: string | null
+          http_code?: number | null
+          id?: string
+          message: string
+          phone: string
+          response?: string | null
+          sent_at?: string
+          status?: string
+          trigger_type: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          dedupe_key?: string | null
+          http_code?: number | null
+          id?: string
+          message?: string
+          phone?: string
+          response?: string | null
+          sent_at?: string
+          status?: string
+          trigger_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stk_transactions: {
+        Row: {
+          amount: number
+          callback_payload: Json | null
+          checkout_request_id: string | null
+          created_at: string
+          failure_reason: string | null
+          id: string
+          merchant_request_id: string | null
+          phone: string
+          ref: string
+          request_payload: Json | null
+          response_payload: Json | null
+          status: string
+          tier: Database["public"]["Enums"]["account_tier"]
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          callback_payload?: Json | null
+          checkout_request_id?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          merchant_request_id?: string | null
+          phone: string
+          ref: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+          tier: Database["public"]["Enums"]["account_tier"]
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          callback_payload?: Json | null
+          checkout_request_id?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          merchant_request_id?: string | null
+          phone?: string
+          ref?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+          tier?: Database["public"]["Enums"]["account_tier"]
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stk_transactions_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -195,6 +373,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_stk: {
+        Args: {
+          _actor?: string
+          _amount: number
+          _payload: Json
+          _ref: string
+          _txid: string
+        }
+        Returns: Json
+      }
       complete_task: { Args: { _task_id: string }; Returns: number }
       has_role: {
         Args: {
