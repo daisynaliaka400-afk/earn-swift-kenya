@@ -75,7 +75,7 @@ export const initiateStkPush = createServerFn({ method: "POST" })
     }
     await db.from("stk_transactions").update({ status: "pending", checkout_request_id: checkout ?? null, merchant_request_id: merchant ?? null, response_payload: resBody as never, updated_at: new Date().toISOString() }).eq("ref", ref);
     await sendSms(db, { phone, userId: context.userId, trigger: "stk_sent", dedupeKey: `stk_sent:${ref}`,
-      message: `📲 ${user.name}, we've sent an M-Pesa prompt to ${phone}. Enter your PIN to activate. Ref: ${ref}` });
+      message: `${user.name}, we've sent an M-Pesa prompt to ${phone}. Enter your PIN to activate. Ref: ${ref}` });
     return { success: true as const, ref };
   });
 
@@ -123,4 +123,43 @@ export const adminManualActivate = createServerFn({ method: "POST" })
     const { notifyActivation } = await import("./activation.server");
     await notifyActivation(db, r as Record<string, unknown>);
     return r as { ok: boolean };
+  });
+
+export const adminDeleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("You cannot delete your own admin account.");
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    await db.from("profiles").update({ referred_by: null }).eq("referred_by", data.userId);
+    await db.from("user_roles").delete().eq("user_id", data.userId);
+    const { error: pErr } = await db.from("profiles").delete().eq("id", data.userId);
+    if (pErr) throw new Error(pErr.message);
+    const { error } = await db.auth.admin.deleteUser(data.userId);
+    if (error && !/not found/i.test(error.message)) throw new Error(error.message);
+    await db.from("admin_audit").insert({ actor: context.userId, action: "delete_user", details: { user: data.userId } });
+    return { ok: true };
+  });
+
+export const adminGetSmsKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const { data } = await db.from("app_settings").select("value,updated_at").eq("key", "sms_api_token").maybeSingle();
+    const v = data?.value || process.env["SMS_API_TOKEN"] || "";
+    return { masked: v ? `${v.slice(0, 4)}••••${v.slice(-4)}` : "Not set", source: data ? "dashboard" : "default", updatedAt: data?.updated_at ?? null };
+  });
+
+export const adminSetSmsKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ key: z.string().trim().min(8).max(500) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const { error } = await db.from("app_settings").upsert({ key: "sms_api_token", value: data.key, updated_at: new Date().toISOString() });
+    if (error) throw new Error(error.message);
+    await db.from("admin_audit").insert({ actor: context.userId, action: "sms_key_updated", details: {} });
+    return { ok: true };
   });

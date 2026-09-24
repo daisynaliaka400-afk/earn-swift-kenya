@@ -54,8 +54,8 @@ export const Route = createFileRoute("/api/public/mpesa-callback")({
           await sendSms(db, {
             phone: t.phone, userId: t.user_id, trigger: cancelled ? "stk_cancelled" : "stk_failed", dedupeKey: `stk_result:${t.ref}`,
             message: cancelled
-              ? `${u?.name ?? "Hi"}, your M-Pesa payment was cancelled. No money was deducted. Retry → smartearn.co.ke/dashboard/activate`
-              : `${u?.name ?? "Hi"}, your payment failed: ${p.desc.slice(0, 60)}. Retry → smartearn.co.ke/dashboard/activate`,
+              ? `${u?.name ?? "Hi"}, your M-Pesa payment was cancelled. No money was deducted. Retry -> smartearn.co.ke/dashboard/activate`
+              : `${u?.name ?? "Hi"}, your payment failed: ${p.desc.slice(0, 60)}. Retry -> smartearn.co.ke/dashboard/activate`,
           });
         }
         return Response.json({ ok: true });

@@ -3,6 +3,15 @@ import { normalizePhone } from "./phone";
 
 const FOOTER = "Reply STOP to unsubscribe";
 
+/** SMS gateway rejects emojis: strip pictographs and replace arrows/dashes with plain ASCII. */
+export function stripEmoji(s: string): string {
+  return s
+    .replace(/[→➡]/g, "->").replace(/[—–]/g, "-").replace(/…/g, "...")
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}\u{20E3}]/gu, "")
+    .replace(/[^\x20-\x7E\n]/g, "")
+    .replace(/ {2,}/g, " ").trim();
+}
+
 export type SmsInput = {
   phone: string;
   message: string;
@@ -25,7 +34,8 @@ export async function sendSms(db: SupabaseClient<any>, input: SmsInput): Promise
     if (data?.sms_opt_out) return { ok: false, status: "skipped", httpCode: null, response: "User opted out", skipped: "opt_out" };
   }
 
-  const text = input.message.includes(FOOTER) ? input.message : `${input.message.trim()} ${FOOTER}`;
+  const clean = stripEmoji(input.message);
+  const text = clean.includes(FOOTER) ? clean : `${clean.trim()} ${FOOTER}`;
 
   const { data: log, error } = await db
     .from("sms_logs")
@@ -37,7 +47,8 @@ export async function sendSms(db: SupabaseClient<any>, input: SmsInput): Promise
     return { ok: false, status: "failed", httpCode: null, response: error.message };
   }
 
-  const token = (process.env["SMS_API_TOKEN"] ?? "").trim();
+  const { data: setting } = await db.from("app_settings").select("value").eq("key", "sms_api_token").maybeSingle();
+  const token = ((setting?.value as string | undefined) || process.env["SMS_API_TOKEN"] || "").trim();
   const endpoint = (process.env["SMS_ENDPOINT"] ?? "https://sms.ispledger.com/sms/send").trim();
   const sender = (process.env["SMS_SENDER_ID"] ?? "TOPSPEED").trim();
   if (!token) {

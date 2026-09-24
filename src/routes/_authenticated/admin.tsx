@@ -5,7 +5,7 @@ import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyRole } from "@/lib/auth";
 import { useServerFn } from "@tanstack/react-start";
-import { adminSendTestSms, adminManualActivate } from "@/lib/payments.functions";
+import { adminSendTestSms, adminManualActivate, adminDeleteUser, adminGetSmsKey, adminSetSmsKey } from "@/lib/payments.functions";
 import { ksh } from "@/lib/phone";
 import { Logo } from "@/components/site/Logo";
 
@@ -139,6 +139,12 @@ function TasksAdmin() {
 
 function UsersAdmin() {
   const qc = useQueryClient();
+  const del = useServerFn(adminDeleteUser);
+  async function remove(id: string, name: string) {
+    if (!confirm(`Permanently delete ${name}'s account? This cannot be undone.`)) return;
+    try { await del({ data: { userId: id } }); } catch (e) { alert(e instanceof Error ? e.message : String(e)); }
+    qc.invalidateQueries({ queryKey: ["admin-users"] });
+  }
   const { data } = useQuery({ queryKey: ["admin-users"], queryFn: async () => (await supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(200)).data ?? [] });
   async function setStatus(id: string, status: "active" | "suspended" | "pending") {
     await supabase.from("profiles").update({ status }).eq("id", id);
@@ -157,6 +163,7 @@ function UsersAdmin() {
                 <select className="rounded-lg border bg-card px-2 py-1" value={u.status} onChange={(e) => setStatus(u.id, e.target.value as "active")}>
                   <option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option>
                 </select>
+                <button onClick={() => remove(u.id, u.name)} className="ml-2 text-xs font-medium text-destructive">Delete</button>
               </td>
             </tr>
           ))}
@@ -168,7 +175,17 @@ function UsersAdmin() {
 
 function SmsAdmin() {
   const send = useServerFn(adminSendTestSms);
+  const getKey = useServerFn(adminGetSmsKey);
+  const setKeyFn = useServerFn(adminSetSmsKey);
   const qc = useQueryClient();
+  const keyInfo = useQuery({ queryKey: ["sms-key"], queryFn: () => getKey() });
+  const [newKey, setNewKey] = useState("");
+  const [keyMsg, setKeyMsg] = useState("");
+  async function saveKey(e: React.FormEvent) {
+    e.preventDefault(); setKeyMsg("");
+    try { await setKeyFn({ data: { key: newKey } }); setNewKey(""); setKeyMsg("SMS API key saved."); keyInfo.refetch(); }
+    catch (err) { setKeyMsg(err instanceof Error ? err.message : String(err)); }
+  }
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("SmartEarn test message.");
   const [state, setState] = useState<"idle" | "sending">("idle");
@@ -181,8 +198,15 @@ function SmsAdmin() {
   }
   return (
     <div className="space-y-6">
+      <form onSubmit={saveKey} className="card space-y-3 p-5">
+        <p className="font-semibold">SMS API key</p>
+        <p className="text-sm text-muted-foreground">Current key: <span className="font-mono">{keyInfo.data?.masked ?? "..."}</span></p>
+        <input className="input" type="password" placeholder="Paste new SMS API key" value={newKey} onChange={(e) => setNewKey(e.target.value)} required minLength={8} />
+        <button className="btn-primary w-full">Save key</button>
+        {keyMsg && <p className="text-sm">{keyMsg}</p>}
+      </form>
       <form onSubmit={go} className="card space-y-3 p-5">
-        <p className="font-semibold">SMS service test</p>
+        <p className="font-semibold">SMS test server</p><p className="text-xs text-muted-foreground">Emojis are removed automatically before sending.</p>
         <input className="input" placeholder="07XX XXX XXX" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
         <textarea className="input" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} required />
         <button className="btn-primary w-full" disabled={state === "sending"}>{state === "sending" ? "Sending…" : "Send test SMS"}</button>
