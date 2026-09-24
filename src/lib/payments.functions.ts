@@ -31,31 +31,47 @@ export const initiateStkPush = createServerFn({ method: "POST" })
 
     const amount = TIER_AMOUNT[data.tier];
     const ref = `SMARTERN-${context.userId.slice(0, 8)}-${now}`;
-    const payload = { phone, amount, account_reference: ref, description: "SmartEarn Activation",
-      callback_url: process.env["SMARTPAY_CALLBACK_URL"] || undefined };
+    const payload = { phone, amount, account_reference: ref, description: "SmartEarn Activation" };
     await db.from("stk_transactions").insert({ user_id: context.userId, phone, amount, tier: data.tier, ref, request_payload: payload });
 
     const key = (process.env["SMARTPAY_API_KEY"] ?? "").trim();
-    const endpoint = process.env["SMARTPAY_STK_ENDPOINT"] || "https://api.smartpaywallet.co.ke/v1/stk/push";
+    const endpoint = process.env["SMARTPAY_STK_ENDPOINT"] || "https://api.smartpaypesa.com/v1/stk/push";
     let resBody: Record<string, unknown> = {};
     let okRes = false;
+    let httpStatus = 0;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
     try {
-      const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` }, body: JSON.stringify(payload) });
+      if (!key) throw new Error("SmartPay API key is not configured");
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      httpStatus = res.status;
       const text = await res.text();
       try { resBody = JSON.parse(text); } catch { resBody = { raw: text }; }
       okRes = res.ok && resBody["success"] !== false;
     } catch (e) {
-      resBody = { error: e instanceof Error ? e.message : String(e) };
+      resBody = { error: e instanceof Error && e.name === "AbortError" ? "SmartPay request timed out" : e instanceof Error ? e.message : String(e) };
+    } finally {
+      clearTimeout(timeout);
     }
     const d = (resBody["data"] as Record<string, unknown> | undefined) ?? resBody;
     const checkout = (d["checkout_request_id"] ?? d["CheckoutRequestID"]) as string | undefined;
     const merchant = (d["merchant_request_id"] ?? d["MerchantRequestID"]) as string | undefined;
 
     if (!okRes) {
-      const reason = String(resBody["message"] ?? resBody["error"] ?? "Gateway error");
+      const reason = String(resBody["message"] ?? resBody["error"] ?? `SmartPay returned HTTP ${httpStatus || "error"}`);
+      const errorCode = String(resBody["error_code"] ?? "");
       await db.from("stk_transactions").update({ status: "failed", failure_reason: reason, response_payload: resBody as never, updated_at: new Date().toISOString() }).eq("ref", ref);
-      console.error("STK push failed", resBody);
-      return { success: false as const, error: "Couldn't send the M-Pesa prompt. Please try again." };
+      console.error("STK push failed", { httpStatus, response: resBody });
+      return { success: false as const, error: errorCode === "LIMIT_REACHED"
+        ? "M-Pesa prompts are temporarily unavailable because the payment service limit has been reached. Please use manual payment."
+        : httpStatus === 401 || httpStatus === 403
+        ? "SmartPay rejected the payment connection. Please use manual payment while support checks it."
+        : "Couldn't send the M-Pesa prompt. Please try again or use manual payment." };
     }
     await db.from("stk_transactions").update({ status: "pending", checkout_request_id: checkout ?? null, merchant_request_id: merchant ?? null, response_payload: resBody as never, updated_at: new Date().toISOString() }).eq("ref", ref);
     await sendSms(db, { phone, userId: context.userId, trigger: "stk_sent", dedupeKey: `stk_sent:${ref}`,

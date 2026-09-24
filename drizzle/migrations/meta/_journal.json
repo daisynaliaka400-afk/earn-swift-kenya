@@ -15,6 +15,13 @@
       "when": 1790270951213,
       "tag": "0001_payments_sms",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790271599603,
+      "tag": "0002_require_verifiable_live_tasks",
+      "breakpoints": true
     }
   ]
 }

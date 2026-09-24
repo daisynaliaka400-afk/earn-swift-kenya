@@ -1,7 +1,7 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Clock, LogOut, Wallet, Users, Flame, Copy } from "lucide-react";
+import { Clock, LogOut, Wallet, Users, Flame, Copy, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyRole } from "@/lib/auth";
 import { ksh } from "@/lib/phone";
@@ -12,7 +12,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   beforeLoad: async () => {
     if ((await getMyRole()) === "admin") throw redirect({ to: "/admin" });
   },
-  head: () => ({ meta: [{ title: "Dashboard — SmartEarn" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [
+    { title: "Dashboard — SmartEarn" },
+    { name: "description", content: "Manage your SmartEarn tasks, rewards, and account activity." },
+    { property: "og:title", content: "Dashboard — SmartEarn" },
+    { property: "og:description", content: "Manage SmartEarn tasks, rewards, and account activity." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "robots", content: "noindex" },
+  ] }),
   component: Dashboard,
 });
 
@@ -90,10 +98,14 @@ function Dashboard() {
               <div key={t.id} className="card flex items-center gap-4 p-4">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{t.title}</p>
+                   {t.sponsor_name && <p className="text-xs font-medium text-primary">By {t.sponsor_name}</p>}
                   <p className="flex items-center gap-2 text-xs text-muted-foreground"><span>{t.category}</span><Clock className="h-3 w-3" />~{t.est_minutes} min</p>
                   {msg?.id === t.id && <p className={`mt-1 text-xs ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</p>}
                 </div>
-                <button onClick={() => doTask(t.id)} className="btn-primary px-4 py-2">Start</button>
+                <div className="flex shrink-0 flex-col gap-2">
+                  {t.action_url && <a href={t.action_url} target="_blank" rel="noopener noreferrer" className="btn-outline px-3 py-2">Open <ExternalLink className="h-3.5 w-3.5" /></a>}
+                  <button onClick={() => doTask(t.id)} disabled={!t.action_url || p?.status !== "active"} className="btn-primary px-3 py-2">Mark done</button>
+                </div>
               </div>
             ))}
           </div>

@@ -7,8 +7,9 @@
 - [x] Admin: overview stats, task management, user status
 - [x] About, Terms, Privacy, Refund, Help pages
 
-## Phase 2 — payments (done, needs a small real test)
+## Phase 2 — payments (connected, needs a small real test)
 - [x] stk_transactions + payments tables, initiate STK push, callback, status polling
+- [x] Corrected SmartPay host to the documented SmartPay Pesa API and added request timeout/error handling
 - [x] /dashboard/activate page + manual Till 5441898 fallback
 - [x] Referral commissions (80/150/250), admin STK transactions page + CSV
 
@@ -25,6 +26,9 @@
 - [ ] Referrals page, profile page, leaderboard
 
 ## Open items
-- First admin account must be granted the admin role (needs admin's phone number)
+- [x] First admin account securely provisioned and granted the admin role
+- [x] Generic sample tasks paused; only tasks with a verified HTTPS destination can now be made live
+- Add sponsor-provided task links and instructions through Admin before publishing tasks
 - Support contact details for Help page
 - Confirm SmartPay callback URL registered in SmartPay dashboard: https://project--7135d1a6-507a-47ce-b4c8-2f404af01cf0.lovable.app/api/public/mpesa-callback
+- SmartPay currently returns `LIMIT_REACHED`; the provider account must be funded or its API allowance renewed before live prompts can succeed
