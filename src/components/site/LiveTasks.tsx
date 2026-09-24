@@ -10,7 +10,7 @@ export function useActiveTasks() {
   // Live updates: any task change instantly refreshes every open task list.
   useEffect(() => {
     const ch = supabase
-      .channel("tasks-live")
+      .channel(`tasks-live-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () =>
         qc.invalidateQueries({ queryKey: ["public-tasks"] }),
       )
