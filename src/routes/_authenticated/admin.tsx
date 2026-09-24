@@ -4,6 +4,8 @@ import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyRole } from "@/lib/auth";
+import { useServerFn } from "@tanstack/react-start";
+import { adminSendTestSms, adminManualActivate } from "@/lib/payments.functions";
 import { ksh } from "@/lib/phone";
 import { Logo } from "@/components/site/Logo";
 
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: Admin,
 });
 
-const tabs = ["Overview", "Tasks", "Users"] as const;
+const tabs = ["Overview", "Tasks", "Users", "Payments", "SMS"] as const;
 
 function Admin() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("Overview");
@@ -38,6 +40,8 @@ function Admin() {
         {tab === "Overview" && <Overview />}
         {tab === "Tasks" && <TasksAdmin />}
         {tab === "Users" && <UsersAdmin />}
+        {tab === "Payments" && <StkAdmin />}
+        {tab === "SMS" && <SmsAdmin />}
       </main>
     </div>
   );
@@ -144,6 +148,100 @@ function UsersAdmin() {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function SmsAdmin() {
+  const send = useServerFn(adminSendTestSms);
+  const qc = useQueryClient();
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("SmartEarn test message.");
+  const [state, setState] = useState<"idle" | "sending">("idle");
+  const [res, setRes] = useState<{ status: string; httpCode: number | null; response: string; at: string } | null>(null);
+  const logs = useQuery({ queryKey: ["sms-logs"], queryFn: async () => (await supabase.from("sms_logs").select("*").order("sent_at", { ascending: false }).limit(50)).data ?? [] });
+  async function go(e: React.FormEvent) {
+    e.preventDefault(); setState("sending"); setRes(null);
+    try { setRes(await send({ data: { phone, message } })); } catch (err) { setRes({ status: "failed", httpCode: null, response: String(err), at: new Date().toISOString() }); }
+    setState("idle"); qc.invalidateQueries({ queryKey: ["sms-logs"] });
+  }
+  return (
+    <div className="space-y-6">
+      <form onSubmit={go} className="card space-y-3 p-5">
+        <p className="font-semibold">SMS service test</p>
+        <input className="input" placeholder="07XX XXX XXX" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        <textarea className="input" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} required />
+        <button className="btn-primary w-full" disabled={state === "sending"}>{state === "sending" ? "Sending…" : "Send test SMS"}</button>
+        {res && (
+          <div className={`rounded-xl p-3 text-sm ${res.status === "sent" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+            <p className="font-semibold capitalize">{res.status} · HTTP {res.httpCode ?? "—"} · {new Date(res.at).toLocaleString()}</p>
+            <p className="mt-1 break-all font-mono text-xs">{res.response}</p>
+          </div>
+        )}
+      </form>
+      <div className="card overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="text-left text-muted-foreground"><tr>{["Time", "Phone", "Trigger", "Status", "HTTP", "Response"].map((h) => <th key={h} className="p-3">{h}</th>)}</tr></thead>
+          <tbody className="divide-y">
+            {logs.data?.map((l) => (
+              <tr key={l.id}><td className="p-3 whitespace-nowrap">{new Date(l.sent_at).toLocaleString()}</td><td className="p-3">{l.phone}</td><td className="p-3">{l.trigger_type}</td>
+                <td className={`p-3 font-medium ${l.status === "sent" ? "text-success" : l.status === "failed" ? "text-destructive" : ""}`}>{l.status}</td><td className="p-3">{l.http_code ?? "—"}</td>
+                <td className="max-w-xs truncate p-3 font-mono" title={l.response ?? ""}>{l.response}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function StkAdmin() {
+  const qc = useQueryClient();
+  const activate = useServerFn(adminManualActivate);
+  const [status, setStatus] = useState("");
+  const { data } = useQuery({ queryKey: ["stk", status], queryFn: async () => {
+    let q = supabase.from("stk_transactions").select("*, profiles(name)").order("created_at", { ascending: false }).limit(200);
+    if (status) q = q.eq("status", status);
+    return (await q).data ?? [];
+  } });
+  const today = new Date().toDateString();
+  const t = (data ?? []).filter((x) => new Date(x.created_at).toDateString() === today);
+  const ok = t.filter((x) => x.status === "success");
+  function csv() {
+    const rows = [["ref", "phone", "amount", "tier", "status", "transaction_id", "created_at"], ...(data ?? []).map((x) => [x.ref, x.phone, x.amount, x.tier, x.status, x.transaction_id ?? "", x.created_at])];
+    const url = URL.createObjectURL(new Blob([rows.map((r) => r.join(",")).join("\n")], { type: "text/csv" }));
+    Object.assign(document.createElement("a"), { href: url, download: "stk-transactions.csv" }).click();
+  }
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {[["Pushes today", t.length], ["Success rate", t.length ? `${Math.round((ok.length / t.length) * 100)}%` : "—"], ["Revenue today", ksh(ok.reduce((a, x) => a + Number(x.amount), 0))], ["Failures today", t.filter((x) => ["failed", "cancelled"].includes(x.status)).length]].map(([k, v]) => (
+          <div key={k as string} className="card p-4"><p className="text-xs text-muted-foreground">{k}</p><p className="font-display text-2xl font-bold">{v}</p></div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <select className="input max-w-xs" value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">All statuses</option>{["initiated", "pending", "success", "failed", "cancelled"].map((s) => <option key={s}>{s}</option>)}
+        </select>
+        <button onClick={csv} className="btn-outline">Export CSV</button>
+      </div>
+      <div className="card overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="text-left text-muted-foreground"><tr>{["User", "Phone", "Amount", "Tier", "Ref", "Status", "Time", ""].map((h) => <th key={h} className="p-3">{h}</th>)}</tr></thead>
+          <tbody className="divide-y">
+            {data?.map((x) => (
+              <tr key={x.id}>
+                <td className="p-3">{(x.profiles as { name: string } | null)?.name}</td><td className="p-3">{x.phone}</td><td className="p-3">{ksh(x.amount)}</td><td className="p-3 capitalize">{x.tier}</td>
+                <td className="p-3 font-mono">{x.ref}</td><td className="p-3">{x.status}{x.failure_reason ? ` (${x.failure_reason})` : ""}</td><td className="p-3 whitespace-nowrap">{new Date(x.created_at).toLocaleString()}</td>
+                <td className="flex gap-2 p-3">
+                  {x.callback_payload && <button className="text-primary" onClick={() => alert(JSON.stringify(x.callback_payload, null, 2))}>Callback</button>}
+                  {x.status !== "success" && <button className="text-accent" onClick={async () => { if (confirm("Mark as paid and activate this user?")) { await activate({ data: { ref: x.ref } }); qc.invalidateQueries({ queryKey: ["stk"] }); } }}>Mark paid</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

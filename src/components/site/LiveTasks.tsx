@@ -1,10 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Clock, RefreshCw, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ksh } from "@/lib/phone";
 
 export function useActiveTasks() {
+  const qc = useQueryClient();
+  // Live updates: any task change instantly refreshes every open task list.
+  useEffect(() => {
+    const ch = supabase
+      .channel(`tasks-live-${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () =>
+        qc.invalidateQueries({ queryKey: ["public-tasks"] }),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [qc]);
   return useQuery({
     queryKey: ["public-tasks"],
     queryFn: async () => {
@@ -13,11 +25,11 @@ export function useActiveTasks() {
         .select("id,title,description,category,reward_starter,reward_pro,est_minutes,slots_total,slots_used")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
-        .limit(12);
+        .limit(50);
       if (error) throw error;
       return data;
     },
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 }
 

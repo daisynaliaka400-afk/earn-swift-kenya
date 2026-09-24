@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Clock, LogOut, Wallet, Users, Flame, Copy } from "lucide-react";
@@ -78,7 +78,8 @@ function Dashboard() {
         {p?.status !== "active" && (
           <div className="card border-primary/30 p-5">
             <p className="font-semibold">Activate your account</p>
-            <p className="mt-1 text-sm text-muted-foreground">Activation unlocks all tasks, higher rewards and withdrawals. M-Pesa activation will be available here shortly.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Activation unlocks all tasks, higher rewards and withdrawals.</p>
+            <Link to="/dashboard/activate" className="btn-primary mt-3 w-full">Activate with M-Pesa</Link>
           </div>
         )}
 

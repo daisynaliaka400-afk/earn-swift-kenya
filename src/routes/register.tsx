@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthShell } from "@/components/site/AuthShell";
 import { normalizePhone, phoneToAuthEmail } from "@/lib/phone";
+import { sendWelcomeSms } from "@/lib/welcome.functions";
 
 export const Route = createFileRoute("/register")({
   validateSearch: (s: Record<string, unknown>): { ref?: string } =>
@@ -49,6 +50,7 @@ function Register() {
     });
     setBusy(false);
     if (error) return setErr(error.message.includes("registered") ? "This phone number already has an account." : error.message);
+    sendWelcomeSms().catch(() => {});
     nav({ to: "/dashboard" });
   }
 
