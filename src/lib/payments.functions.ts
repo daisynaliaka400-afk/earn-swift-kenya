@@ -9,9 +9,10 @@ export const initiateStkPush = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ tier: z.enum(["starter", "standard", "pro"]), phone: z.string().min(9).max(16) }).parse(d))
   .handler(async ({ data, context }) => {
-    if (!process.env["SUPABASE_SERVICE_ROLE_KEY"] || !process.env["SMARTPAY_API_KEY"]) {
-      console.error("Payment config missing", { serviceRole: !!process.env["SUPABASE_SERVICE_ROLE_KEY"], smartpay: !!process.env["SMARTPAY_API_KEY"] });
-      return { success: false as const, error: "Payments are not configured on this server. Please use manual payment." };
+    const missing = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SMARTPAY_API_KEY"].filter((k) => !process.env[k]);
+    if (missing.length) {
+      console.error("Payment config missing", missing);
+      return { success: false as const, error: `Payments are not configured on this server. Missing setting(s): ${missing.join(", ")}. Please use manual payment.` };
     }
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const { sendSms } = await import("./sms.server");
