@@ -63,3 +63,10 @@ In the SmartPay dashboard set the callback URL to:
 Existing data lives in the Lovable backend. Export tables as CSV there
 (Cloud -> Advanced -> Export data) and import into the same tables in your
 Supabase. Members must reset their passwords (passwords cannot be exported).
+
+## 4. Update v2 (task limits, KSh 50 minimum, withdrawals, referrals)
+If you already ran `setup.sql` before, run `supabase/update_v2_limits_withdrawals.sql` once in the SQL Editor.
+
+## 5. Automatic SMS (reminders, motivation, promotions, warnings)
+Add `CRON_SECRET` (any long random text) in Vercel env vars. `vercel.json` schedules
+`/api/public/cron/sms` at 8AM, 1PM, 7PM and 10PM Kenya time.
