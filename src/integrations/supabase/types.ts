@@ -104,6 +104,7 @@ export type Database = {
           fraud_score: number
           id: string
           last_login: string | null
+          last_sms_digest: string | null
           last_task: string | null
           name: string
           phone: string
@@ -122,6 +123,7 @@ export type Database = {
           fraud_score?: number
           id: string
           last_login?: string | null
+          last_sms_digest?: string | null
           last_task?: string | null
           name: string
           phone: string
@@ -140,6 +142,7 @@ export type Database = {
           fraud_score?: number
           id?: string
           last_login?: string | null
+          last_sms_digest?: string | null
           last_task?: string | null
           name?: string
           phone?: string
@@ -400,6 +403,8 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          phone: string | null
+          processed_at: string | null
           status: string
           user_id: string
         }
@@ -407,6 +412,8 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          phone?: string | null
+          processed_at?: string | null
           status?: string
           user_id: string
         }
@@ -414,6 +421,8 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          phone?: string | null
+          processed_at?: string | null
           status?: string
           user_id?: string
         }
@@ -442,6 +451,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_process_withdrawal: {
+        Args: { _id: string; _paid: boolean }
+        Returns: undefined
+      }
       complete_task: { Args: { _task_id: string }; Returns: number }
       has_role: {
         Args: {
@@ -449,6 +462,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      my_referrals: {
+        Args: never
+        Returns: {
+          earned: number
+          joined: string
+          name: string
+          status: Database["public"]["Enums"]["account_status"]
+        }[]
       }
       recent_activity: {
         Args: never
@@ -458,6 +480,10 @@ export type Database = {
           kind: string
           who: string
         }[]
+      }
+      request_withdrawal: {
+        Args: { _amount: number; _phone: string }
+        Returns: string
       }
     }
     Enums: {
