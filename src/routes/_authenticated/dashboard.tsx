@@ -2,7 +2,7 @@ import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-ro
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { SITE_URL } from "@/lib/site";
-import { Clock, LogOut, Wallet, Users, Flame, Copy, ExternalLink } from "lucide-react";
+import { Clock, LogOut, Wallet, Users, Flame, Copy, ExternalLink, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyRole } from "@/lib/auth";
 import { ksh } from "@/lib/phone";
@@ -35,6 +35,12 @@ function Dashboard() {
     queryKey: ["profile", user.id],
     queryFn: async () => (await supabase.from("profiles").select("*").eq("id", user.id).single()).data,
   });
+  
+  const withdrawalEligibility = useQuery({
+    queryKey: ["withdrawal-eligibility", user.id],
+    queryFn: async () => (await supabase.rpc("get_withdrawal_eligibility")).data?.[0],
+  });
+
   const history = useQuery({
     queryKey: ["completions", user.id],
     queryFn: async () =>
@@ -49,13 +55,23 @@ function Dashboard() {
   useEffect(() => { if (left <= 0) return; const t = setTimeout(() => setLeft(left - 1), 1000); return () => clearTimeout(t); }, [left]);
   const [wAmt, setWAmt] = useState("");
   const [wMsg, setWMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [withdrawing, setWithdrawing] = useState(false);
+
   async function withdraw(e: React.FormEvent) {
-    e.preventDefault(); setWMsg(null);
-    const { error } = await supabase.rpc("request_withdrawal", { _amount: Number(wAmt), _phone: p?.phone ?? "" });
-    setWMsg(error ? { ok: false, text: error.message } : { ok: true, text: "Withdrawal requested. It will be paid to your M-Pesa." });
-    if (!error) setWAmt("");
-    qc.invalidateQueries();
+    e.preventDefault();
+    setWMsg(null);
+    setWithdrawing(true);
+    
+    const { data, error } = await supabase.rpc("request_withdrawal_v2", { _amount: Number(wAmt), _phone: p?.phone ?? "" });
+    
+    setWithdrawing(false);
+    setWMsg(error ? { ok: false, text: error.message } : { ok: true, text: "Withdrawal requested successfully. It will be paid to your M-Pesa within 24-72 hours." });
+    if (!error) {
+      setWAmt("");
+      qc.invalidateQueries();
+    }
   }
+  
   const refLink = p ? `${SITE_URL}/register?ref=${p.referral_code}` : "";
 
   async function doTask(id: string) {
@@ -71,6 +87,8 @@ function Dashboard() {
     qc.clear();
     nav({ to: "/" });
   }
+
+  const elig = withdrawalEligibility.data;
 
   return (
     <div className="min-h-screen pb-10">
@@ -115,13 +133,12 @@ function Dashboard() {
               <div key={t.id} className="card flex items-center gap-4 p-4">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{t.title}</p>
-                   {t.sponsor_name && <p className="text-xs font-medium text-primary">By {t.sponsor_name}</p>}
+                  {t.sponsor_name && <p className="text-xs font-medium text-primary">By {t.sponsor_name}</p>}
                   <p className="flex items-center gap-2 text-xs text-muted-foreground"><span>{t.category}</span><Clock className="h-3 w-3" />~{t.est_minutes} min</p>
                   {msg?.id === t.id && <p className={`mt-1 text-xs ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</p>}
                 </div>
                 <div className="flex shrink-0 flex-col gap-2">
-                  
-                  <button onClick={() => { setOpen({ id: t.id, title: t.title, url: t.action_url, instructions: t.instructions ?? null, mins: t.est_minutes }); setLeft(Math.min(60, Math.max(15, t.est_minutes * 15))); }} className="btn-primary px-3 py-2">Start task</button>
+                  <button onClick={() => { setOpen({ id: t.id, title: t.title, url: t.action_url, instructions: t.instructions ?? null, mins: t.est_minutes }); setLeft(Math.min(60, Math.max(15, t.est_minutes * 60))); }} className="btn-primary px-3 py-1 text-xs">Start</button>
                 </div>
               </div>
             ))}
@@ -139,23 +156,84 @@ function Dashboard() {
           <div className="mt-4 divide-y text-sm">
             {refs.data?.length === 0 && <p className="text-muted-foreground">No referrals yet.</p>}
             {refs.data?.map((r, i) => (
-              <div key={i} className="flex justify-between py-2"><span>{r.name} <span className="text-xs capitalize text-muted-foreground">({r.status})</span></span><span className="font-semibold">{ksh(r.earned)}</span></div>
+              <div key={i} className="flex justify-between py-2"><span>{r.name} <span className="text-xs capitalize text-muted-foreground">({r.status})</span></span><span className="font-semibold text-success">{r.earned > 0 ? ksh(r.earned) : "—"}</span></div>
             ))}
           </div>
         </section>
 
         <section id="withdraw" className="card p-5">
-          <h2 className="text-lg font-bold">Withdraw</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Minimum KSh 650. Paid to {p?.phone} via M-Pesa. Account must be active.</p>
-          <form onSubmit={withdraw} className="mt-3 flex gap-2">
-            <input type="number" min={650} required value={wAmt} onChange={(e) => setWAmt(e.target.value)} placeholder="Amount" className="input flex-1" />
-            <button className="btn-primary px-4">Withdraw</button>
+          <div className="mb-4">
+            <h2 className="text-lg font-bold">Withdraw earnings</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Minimum KSh 650 • Requires 3 active referrals • Paid to {p?.phone} via M-Pesa</p>
+          </div>
+
+          {elig && !elig.eligible && (
+            <div className="mb-4 rounded-lg bg-warning/10 p-4 border border-warning/30 flex gap-3">
+              <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-warning">Withdrawal unavailable</p>
+                <p className="text-sm text-warning/80 mt-1">{elig.reason}</p>
+              </div>
+            </div>
+          )}
+
+          {elig && elig.eligible && (
+            <div className="mb-4 rounded-lg bg-success/10 p-4 border border-success/30 flex gap-3">
+              <div className="flex-1">
+                <p className="font-semibold text-success">Ready to withdraw</p>
+                <p className="text-sm text-success/80 mt-1">Available balance: {ksh(elig.available_to_withdraw)} • {elig.active_referrals} active referrals</p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={withdraw} className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Withdrawal amount (KSh)</label>
+              <input
+                type="number"
+                min={650}
+                max={elig?.available_to_withdraw || 0}
+                step={50}
+                required
+                disabled={!elig?.eligible || withdrawing}
+                value={wAmt}
+                onChange={(e) => setWAmt(e.target.value)}
+                placeholder="Minimum KSh 650"
+                className="input mt-2 w-full"
+              />
+              {elig && <p className="text-xs text-muted-foreground mt-1">Available: {ksh(elig.available_to_withdraw)}</p>}
+            </div>
+            <button
+              type="submit"
+              disabled={!elig?.eligible || withdrawing || !wAmt}
+              className="btn-primary w-full"
+            >
+              {withdrawing ? "Processing..." : "Request withdrawal"}
+            </button>
           </form>
-          {wMsg && <p className={`mt-2 text-sm ${wMsg.ok ? "text-success" : "text-destructive"}`}>{wMsg.text}</p>}
-          <div className="mt-4 divide-y text-sm">
-            {wds.data?.map((w) => (
-              <div key={w.id} className="flex justify-between py-2"><span>{new Date(w.created_at).toLocaleDateString()}</span><span>{ksh(w.amount)} <span className="text-xs capitalize text-muted-foreground">{w.status}</span></span></div>
-            ))}
+
+          {wMsg && (
+            <div className={`mt-3 p-3 rounded-lg text-sm ${wMsg.ok ? "bg-success/10 text-success border border-success/30" : "bg-destructive/10 text-destructive border border-destructive/30"}`}>
+              {wMsg.text}
+            </div>
+          )}
+
+          <div className="mt-6">
+            <h3 className="font-semibold mb-3">Withdrawal history</h3>
+            <div className="divide-y text-sm">
+              {wds.data?.length === 0 && <p className="text-muted-foreground py-3">No withdrawals yet.</p>}
+              {wds.data?.map((w) => (
+                <div key={w.id} className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="font-medium">{new Date(w.created_at).toLocaleDateString()}</p>
+                    <p className={`text-xs capitalize font-medium ${w.status === "paid" ? "text-success" : w.status === "rejected" ? "text-destructive" : "text-warning"}`}>
+                      {w.status}
+                    </p>
+                  </div>
+                  <p className="font-semibold">{ksh(w.amount)}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
