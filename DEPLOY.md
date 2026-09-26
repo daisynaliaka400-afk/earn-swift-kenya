@@ -7,7 +7,7 @@ Your project details (already filled in):
 - Supabase URL: `https://exisbpugnwmhclnjpqru.supabase.co`
 - Supabase project ref: `exisbpugnwmhclnjpqru`
 - Publishable key: `sb_publishable_bLXXpq6QR9PMZpgsRzF2vQ_TX-fZqKP`
-- Vercel site: `https://smartearnn.vercel.app`
+- Vercel site: `https://smarttearnn.vercel.app`
 
 ## Backend pieces (all included)
 | Piece | Where it lives |
@@ -28,7 +28,7 @@ Your project details (already filled in):
 1. SQL Editor -> paste `supabase/setup.sql` -> Run. (You said you already did this.)
 2. Authentication -> Providers -> Email: enabled; turn OFF "Confirm email"
    (members sign in with phone numbers mapped to internal emails).
-3. Authentication -> URL Configuration -> Site URL = `https://smartearnn.vercel.app`.
+3. Authentication -> URL Configuration -> Site URL = `https://smarttearnn.vercel.app`.
 4. Create the admin: sign up in the app with your admin phone, then in SQL Editor:
    ```sql
    insert into public.user_roles (user_id, role)
@@ -57,7 +57,7 @@ Redeploy after adding them (Vercel -> Deployments -> Redeploy).
 
 ## 3. Webhook to change
 In the SmartPay dashboard set the callback URL to:
-`https://smartearnn.vercel.app/api/public/mpesa-callback`
+`https://smarttearnn.vercel.app/api/public/mpesa-callback`
 
 ## Moving existing members
 Existing data lives in the Lovable backend. Export tables as CSV there
