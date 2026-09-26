@@ -40,6 +40,7 @@ function Dashboard() {
     queryFn: async () =>
       (await supabase.from("task_completions").select("id,reward,status,created_at,tasks(title)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)).data ?? [],
   });
+  const p = profile.data;
   const tasks = useActiveTasks();
   const refs = useQuery({ queryKey: ["refs", user.id], queryFn: async () => (await supabase.rpc("my_referrals")).data ?? [] });
   const wds = useQuery({ queryKey: ["wds", user.id], queryFn: async () => (await supabase.from("withdrawals").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)).data ?? [] });
@@ -56,7 +57,6 @@ function Dashboard() {
     qc.invalidateQueries();
   }
   const refLink = p ? `${SITE_URL}/register?ref=${p.referral_code}` : "";
-  const p = profile.data;
 
   async function doTask(id: string) {
     setMsg(null);
