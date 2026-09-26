@@ -22,7 +22,7 @@ export function useActiveTasks() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tasks")
-        .select("id,title,description,category,reward_starter,reward_pro,est_minutes,slots_total,slots_used,action_url,sponsor_name")
+        .select("id,title,description,category,reward_starter,reward_pro,est_minutes,slots_total,slots_used,action_url,sponsor_name,instructions")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(50);

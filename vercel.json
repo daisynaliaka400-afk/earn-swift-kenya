@@ -1,4 +1,10 @@
 {
   "buildCommand": "NITRO_PRESET=vercel npm run build",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "crons": [
+    { "path": "/api/public/cron/sms?type=reminder", "schedule": "0 5 * * *" },
+    { "path": "/api/public/cron/sms?type=motivational", "schedule": "0 10 * * *" },
+    { "path": "/api/public/cron/sms?type=promotional", "schedule": "0 16 * * *" },
+    { "path": "/api/public/cron/sms?type=warning", "schedule": "0 19 * * *" }
+  ]
 }
