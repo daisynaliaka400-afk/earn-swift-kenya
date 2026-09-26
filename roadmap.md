@@ -34,5 +34,5 @@
 - SmartPay currently returns `LIMIT_REACHED`; the provider account must be funded or its API allowance renewed before live prompts can succeed
 
 ## Migration to own Supabase (2026-09-24)
-- User Supabase: exisbpugnwmhclnjpqru.supabase.co; Vercel: smartearnn.vercel.app; values wired into .env.example + DEPLOY.md
-- User must still: add SUPABASE_SERVICE_ROLE_KEY + new SMARTPAY_API_KEY + new SMS_API_TOKEN in Vercel; set SmartPay callback to https://smartearnn.vercel.app/api/public/mpesa-callback; turn off Confirm email; create admin via SQL; redeploy; test small payment + SMS
+- User Supabase: exisbpugnwmhclnjpqru.supabase.co; Vercel: smarttearnn.vercel.app; values wired into .env.example + DEPLOY.md
+- User must still: add SUPABASE_SERVICE_ROLE_KEY + new SMARTPAY_API_KEY + new SMS_API_TOKEN in Vercel; set SmartPay callback to https://smarttearnn.vercel.app/api/public/mpesa-callback; turn off Confirm email; create admin via SQL; redeploy; test small payment + SMS
