@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: Admin,
 });
 
-const tabs = ["Overview", "Tasks", "Users", "Payments", "SMS"] as const;
+const tabs = ["Overview", "Tasks", "Users", "Payments", "Withdrawals", "SMS"] as const;
 
 function Admin() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("Overview");
@@ -50,6 +50,7 @@ function Admin() {
         {tab === "Users" && <UsersAdmin />}
         {tab === "Payments" && <StkAdmin />}
         {tab === "SMS" && <SmsAdmin />}
+        {tab === "Withdrawals" && <WithdrawalsAdmin />}
       </main>
     </div>
   );
@@ -229,6 +230,34 @@ function SmsAdmin() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function WithdrawalsAdmin() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["admin-wd"], queryFn: async () => (await supabase.from("withdrawals").select("*, profiles(name,phone)").order("created_at", { ascending: false }).limit(200)).data ?? [] });
+  async function act(id: string, paid: boolean) {
+    if (!confirm(paid ? "Mark as paid? Send the M-Pesa money first." : "Reject and refund balance?")) return;
+    const { error } = await supabase.rpc("admin_process_withdrawal", { _id: id, _paid: paid });
+    if (error) alert(error.message);
+    qc.invalidateQueries({ queryKey: ["admin-wd"] });
+  }
+  return (
+    <div className="card divide-y">
+      {q.data?.length === 0 && <p className="p-5 text-sm text-muted-foreground">No withdrawal requests.</p>}
+      {q.data?.map((w) => {
+        const u = w.profiles as { name: string; phone: string } | null;
+        return (
+          <div key={w.id} className="flex flex-wrap items-center justify-between gap-2 p-4 text-sm">
+            <div><p className="font-medium">{u?.name} - {w.phone ?? u?.phone}</p><p className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleString()}</p></div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{ksh(w.amount)}</span><span className="chip capitalize">{w.status}</span>
+              {w.status === "pending" && <><button onClick={() => act(w.id, true)} className="btn-primary px-3 py-1">Paid</button><button onClick={() => act(w.id, false)} className="btn-outline px-3 py-1">Reject</button></>}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
