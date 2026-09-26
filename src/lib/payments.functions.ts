@@ -30,7 +30,7 @@ export const initiateStkPush = createServerFn({ method: "POST" })
     const mine = (recent ?? []).filter((r) => r.user_id === context.userId);
     if (mine.some((r) => ["initiated", "pending"].includes(r.status) && now - Date.parse(r.created_at) < 120000))
       return { success: false as const, error: "A payment prompt is already in progress. Check your phone." };
-    if (mine.length >= 3) return { success: false as const, error: "Daily limit of 3 payment attempts reached. Try tomorrow or use manual payment." };
+    // REMOVED: Daily limit of 3 attempts - now allowing unlimited attempts per day
     if ((recent ?? []).filter((r) => r.phone === phone && now - Date.parse(r.created_at) < 300000).length >= 3)
       return { success: false as const, error: "Too many prompts to this number. Wait 5 minutes." };
 
@@ -81,7 +81,7 @@ export const initiateStkPush = createServerFn({ method: "POST" })
     await db.from("stk_transactions").update({ status: "pending", checkout_request_id: checkout ?? null, merchant_request_id: merchant ?? null, response_payload: resBody as never, updated_at: new Date().toISOString() }).eq("ref", ref);
     await sendSms(db, { phone, userId: context.userId, trigger: "stk_sent", dedupeKey: `stk_sent:${ref}`,
       message: `${user.name}, we've sent an M-Pesa prompt to ${phone}. Enter your PIN to activate. Ref: ${ref}` });
-    return { success: true as const, ref };
+    return { success: true as const, ref, stkTransactionId: (await db.from("stk_transactions").select("id").eq("ref", ref).single()).data?.id };
   });
 
 export const checkPaymentStatus = createServerFn({ method: "POST" })
@@ -95,7 +95,7 @@ export const checkPaymentStatus = createServerFn({ method: "POST" })
       await db.from("stk_transactions").update({ status: "failed", failure_reason: "timeout", updated_at: new Date().toISOString() }).eq("id", t.id).in("status", ["initiated", "pending"]);
       return { status: "failed", tier: t.tier, transaction_id: null, message: "The prompt expired. Please try again." };
     }
-    const msg: Record<string, string> = { success: "Payment received — you're active!", failed: t.failure_reason ?? "Payment failed.", cancelled: "Payment was cancelled.", pending: "Waiting for you to enter your PIN…", initiated: "Sending prompt…" };
+    const msg: Record<string, string> = { success: "Payment received — you're active!", failed: t.failure_reason ?? "Payment failed.", cancelled: "Payment was cancelled.", pending: "Waiting for payment confirmation.", initiated: "STK prompt sent." };
     return { status: t.status, tier: t.tier, transaction_id: t.transaction_id, message: msg[t.status] ?? t.status };
   });
 
